@@ -1,3 +1,4 @@
+use num::{BigInt, Num, ToPrimitive};
 use std::fmt::format;
 
 use crate::field::FieldElement;
@@ -41,7 +42,10 @@ impl Channel {
         // Note that when the range is close to 2^256 this does not emit a uniform distribution,
         // even if sha256 is uniformly distributed.
         // It is, however, close enough for this tutorial's purposes.
-        let num = min + (usize::from_str_radix(&self.state, 16).unwrap() % (max - min + 1));
+        let num = min
+            + (BigInt::from_str_radix(&self.state, 16).unwrap() % (max - min + 1))
+                .to_usize()
+                .unwrap();
 
         let digest = sha256::digest(self.state.clone());
         self.state = digest;
@@ -71,7 +75,6 @@ mod tests {
     fn test_reproducability() {
         let mut c = Channel::new();
         c.send("Yes".to_string());
-        println!("{}", c.state);
         let r1 = c.receive_random_int(0, 2_usize.pow(20), true);
 
         let mut d = Channel::new();
@@ -79,5 +82,11 @@ mod tests {
         let r2 = d.receive_random_int(0, 2_usize.pow(20), true);
 
         assert!(r1 == r2);
+    }
+
+    #[test]
+    fn test_uniformity() {
+        // TODO
+        assert!(1 + 1 == 2);
     }
 }
