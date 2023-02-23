@@ -1,3 +1,5 @@
+use rand::Rng;
+
 /// An implementation of field elements from F_(3 * 2**30 + 1).
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub(crate) struct FieldElement(usize);
@@ -26,15 +28,15 @@ impl FieldElement {
     }
 
     pub fn inverse(&self) -> Self {
-        let (mut t, mut new_t) = (0, 1);
-        let (mut r, mut new_r) = (FieldElement::k_modulus(), self.0);
+        let (mut t, mut new_t) = (0_i128, 1_i128);
+        let (mut r, mut new_r) = (FieldElement::k_modulus() as i128, self.0 as i128);
         while new_r != 0 {
             let quotient = r / new_r;
             (t, new_t) = (new_t, t - (quotient * new_t));
             (r, new_r) = (new_r, r - quotient * new_r);
         }
         assert!(r == 1);
-        FieldElement::new(t)
+        FieldElement::new(t as usize)
     }
 
     pub fn pow(&self, n: usize) -> Self {
@@ -63,6 +65,19 @@ impl FieldElement {
             }
         }
         h * self == FieldElement::one()
+    }
+
+    pub fn random_element(exclude_elements: Vec<FieldElement>) -> FieldElement {
+        let mut rnd = rand::thread_rng();
+        let random_element: usize = rnd.gen_range(0..FieldElement::k_modulus());
+        let mut candidate = FieldElement::new(random_element);
+
+        while !exclude_elements.contains(&candidate) {
+            let random_element: usize = rnd.gen_range(0..FieldElement::k_modulus());
+            candidate = FieldElement::new(random_element);
+        }
+
+        candidate
     }
 }
 
@@ -160,5 +175,26 @@ impl std::ops::Neg for FieldElement {
 
     fn neg(self) -> Self::Output {
         FieldElement::zero() - self
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_field_operations() {
+        let t = FieldElement::new(2).pow(30) * FieldElement::new(3) + FieldElement::new(1);
+        assert!(t == FieldElement::zero());
+    }
+
+    #[test]
+    fn test_field_div() {
+        // for _ in 0..10 {
+        let t = FieldElement::random_element(vec![FieldElement::zero()]);
+        let t_inv = FieldElement::one() / t;
+        assert!(t_inv == t.inverse());
+        assert!(t_inv * t == FieldElement::one());
+        // }
     }
 }
