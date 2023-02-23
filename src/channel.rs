@@ -1,10 +1,9 @@
 use num::{BigInt, Num, ToPrimitive};
-use std::fmt::format;
 
 use crate::field::FieldElement;
 
-pub fn deserialize() {
-    unimplemented!()
+pub fn deserialize(obj: Vec<String>) -> String {
+    obj.join(",")
 }
 
 // A Channel instance can be used by a prover or a verifier to preserve the semantics of an
