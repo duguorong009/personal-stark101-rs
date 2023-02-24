@@ -2,7 +2,7 @@ use rand::Rng;
 
 /// An implementation of field elements from F_(3 * 2**30 + 1).
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub(crate) struct FieldElement(usize);
+pub struct FieldElement(usize);
 
 impl FieldElement {
     pub fn new(value: usize) -> Self {
@@ -36,7 +36,7 @@ impl FieldElement {
             (r, new_r) = (new_r, r - quotient * new_r);
         }
         assert!(r == 1);
-        FieldElement::new(t as usize)
+        t.into()
     }
 
     pub fn pow(&self, n: usize) -> Self {
@@ -72,7 +72,7 @@ impl FieldElement {
         let random_element: usize = rnd.gen_range(0..FieldElement::k_modulus());
         let mut candidate = FieldElement::new(random_element);
 
-        while !exclude_elements.contains(&candidate) {
+        while exclude_elements.contains(&candidate) {
             let random_element: usize = rnd.gen_range(0..FieldElement::k_modulus());
             candidate = FieldElement::new(random_element);
         }
@@ -141,8 +141,7 @@ impl std::ops::Sub for FieldElement {
     type Output = FieldElement;
 
     fn sub(self, rhs: Self) -> Self::Output {
-        // TODO: check that this doesn't break.
-        FieldElement::new(self.0 - rhs.0)
+        (self.0 as i128 - rhs.0 as i128).into()
     }
 }
 
@@ -150,7 +149,7 @@ impl std::ops::Sub<&FieldElement> for FieldElement {
     type Output = FieldElement;
 
     fn sub(self, rhs: &Self) -> Self::Output {
-        FieldElement::new(self.0 - rhs.0)
+        (self.0 as i128 - rhs.0 as i128).into()
     }
 }
 
@@ -178,6 +177,23 @@ impl std::ops::Neg for FieldElement {
     }
 }
 
+impl ToString for FieldElement {
+    fn to_string(&self) -> String {
+        format!("{:x}", self.0)
+    }
+}
+
+impl From<i128> for FieldElement {
+    fn from(value: i128) -> Self {
+        let value_mod_p = if value > 0 {
+            value % (FieldElement::k_modulus() as i128)
+        } else {
+            value + FieldElement::k_modulus() as i128
+        };
+        FieldElement::new(value_mod_p.try_into().unwrap())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -190,11 +206,19 @@ mod tests {
 
     #[test]
     fn test_field_div() {
-        // for _ in 0..10 {
-        let t = FieldElement::random_element(vec![FieldElement::zero()]);
-        let t_inv = FieldElement::one() / t;
-        assert!(t_inv == t.inverse());
-        assert!(t_inv * t == FieldElement::one());
-        // }
+        for _ in 0..1000 {
+            let t = FieldElement::random_element(vec![FieldElement::zero()]);
+            let t_inv = FieldElement::one() / t;
+            assert!(t_inv == t.inverse());
+            assert!(t_inv * t == FieldElement::one());
+        }
+    }
+
+    #[test]
+    fn inverse_test() {
+        let x = FieldElement::new(2);
+        let x_inv = x.inverse();
+
+        assert_eq!(FieldElement::one(), x * x_inv)
     }
 }
