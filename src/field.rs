@@ -67,7 +67,7 @@ impl FieldElement {
         h * self == FieldElement::one()
     }
 
-    pub fn random_element(exclude_elements: Vec<FieldElement>) -> FieldElement {
+    pub fn random_element(exclude_elements: &[FieldElement]) -> FieldElement {
         let mut rnd = rand::thread_rng();
         let random_element: usize = rnd.gen_range(0..FieldElement::k_modulus());
         let mut candidate = FieldElement::new(random_element);
@@ -194,6 +194,12 @@ impl From<i128> for FieldElement {
     }
 }
 
+impl From<usize> for FieldElement {
+    fn from(value: usize) -> Self {
+        FieldElement::new(value)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -207,7 +213,7 @@ mod tests {
     #[test]
     fn test_field_div() {
         for _ in 0..1000 {
-            let t = FieldElement::random_element(vec![FieldElement::zero()]);
+            let t = FieldElement::random_element(&[FieldElement::zero()]);
             let t_inv = FieldElement::one() / t;
             assert!(t_inv == t.inverse());
             assert!(t_inv * t == FieldElement::one());
