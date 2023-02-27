@@ -32,7 +32,8 @@ pub fn part1() -> (
         .map(|x| FieldElement::generator() * x.clone())
         .collect();
 
-    let points_usize = points.iter().map(|x| x.val()).collect();
+    let mut points_usize: Vec<usize> = points.iter().map(|x| x.val()).collect();
+    points_usize.pop();
     let t_usize = t.iter().map(|x| x.val()).collect();
     let p = interpolate_poly(points_usize, t_usize);
 
