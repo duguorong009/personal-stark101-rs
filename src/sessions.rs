@@ -108,7 +108,12 @@ pub fn part2() -> (
 
 // From part 3
 pub fn next_fri_domain(domain: &[FieldElement]) -> Vec<FieldElement> {
-    todo!()
+    let domain_len = domain.len();
+    domain
+        .iter()
+        .take(domain_len / 2)
+        .map(|x| x.clone().pow(2))
+        .collect()
 }
 
 pub fn next_fri_polynomial(poly: &Polynomial, alpha: usize) -> Polynomial {
