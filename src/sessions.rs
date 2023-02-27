@@ -137,7 +137,11 @@ pub fn next_fri_layer(
     dom: &[FieldElement],
     alpha: usize,
 ) -> (Polynomial, Vec<FieldElement>, Vec<FieldElement>) {
-    todo!()
+    let next_poly = next_fri_polynomial(poly, alpha);
+    let next_dom = next_fri_domain(dom);
+    let next_layer = next_dom.iter().map(|x| next_poly.eval(x)).collect();
+
+    (next_poly, next_dom, next_layer)
 }
 
 pub fn part3() {
