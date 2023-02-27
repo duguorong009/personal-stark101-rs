@@ -302,7 +302,10 @@ impl std::ops::Div for Polynomial {
 
     fn div(self, other: Self) -> Self::Output {
         let (div, rem) = self.qdiv(other);
-        assert!(rem == 0, "Polynomials are not divisible.");
+        assert!(
+            rem == Polynomial::new(&[]),
+            "Polynomials are not divisible."
+        );
         div
     }
 }
@@ -449,6 +452,7 @@ mod tests {
     #[test]
     fn test_div() {
         let p = x().pow(2) - 1;
+        println!("p: {:?}", p);
         assert_eq!(p / (x() - 1), x() + 1)
     }
 

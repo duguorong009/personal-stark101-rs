@@ -32,8 +32,8 @@ where
         .zip_longest(l2)
         .map(|x| match x {
             EitherOrBoth::Both(e1, e2) => operation(*e1, *e2),
-            EitherOrBoth::Left(e) => operation(fill_value, *e),
-            EitherOrBoth::Right(e) => operation(*e, fill_value),
+            EitherOrBoth::Left(e) => operation(*e, fill_value),
+            EitherOrBoth::Right(e) => operation(fill_value, *e),
         })
         .collect()
 }
