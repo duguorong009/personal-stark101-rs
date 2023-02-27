@@ -7,11 +7,18 @@ pub enum MerkleTreeNode {
     Leaf(String),
 }
 
+/// Merkle tree implementation
+/// This implementation is not generic, but specific to
+/// this tutorial.
+///
+/// Usage:
+/// let mut mt = MerkleTree(ev);
+/// mt.build_tree();
 pub struct MerkleTree {
     height: u32,
     data: Vec<FieldElement>,
     facts: HashMap<String, MerkleTreeNode>,
-    root: String,
+    pub root: String,
 }
 
 impl MerkleTree {

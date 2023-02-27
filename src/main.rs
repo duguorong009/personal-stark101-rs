@@ -1,4 +1,7 @@
+use channel::Channel;
 use field::FieldElement;
+use merkle::MerkleTree;
+use polynomial::{interpolate_poly, Polynomial};
 
 mod channel;
 mod field;
@@ -10,7 +13,18 @@ fn main() {
     println!("Hello, world!");
 }
 
-fn part1() {
+fn part1() -> (
+    Vec<FieldElement>,
+    FieldElement,
+    Vec<FieldElement>,
+    FieldElement,
+    Vec<FieldElement>,
+    Vec<FieldElement>,
+    Polynomial,
+    Vec<FieldElement>,
+    MerkleTree,
+    Channel,
+) {
     let mut t = vec![FieldElement::new(1), FieldElement::new(3141592)];
     while t.len() < 1023 {
         let second_last = t[t.len() - 2];
@@ -27,6 +41,18 @@ fn part1() {
         .iter()
         .map(|x| FieldElement::generator() * x.clone())
         .collect();
-    // TODO
-    // let p = interpolate_poly(points, t);
+
+    let points_usize = points.iter().map(|x| x.val()).collect();
+    let t_usize = t.iter().map(|x| x.val()).collect();
+    let p = interpolate_poly(points_usize, t_usize);
+
+    let ev = domain.iter().map(|d| p.eval(d.clone())).collect();
+
+    let mut mt = MerkleTree::new(ev.clone());
+    mt.build_tree();
+
+    let mut ch = Channel::new();
+    ch.send(mt.root);
+
+    (t, g, points, h_gen, h, domain, p, ev, mt, ch)
 }
