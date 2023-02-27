@@ -48,8 +48,14 @@ pub fn part1() -> (
     (t, g, points, h_gen, h, domain, p, ev, mt, ch)
 }
 
-pub fn part2() {
-    let (t, g, points, h_gen, h, domain, p, ev, mt, ch) = part1();
+pub fn part2() -> (
+    Polynomial,
+    Vec<FieldElement>,
+    MerkleTree,
+    Channel,
+    Vec<FieldElement>,
+) {
+    let (t, g, points, h_gen, h, domain, p, ev, mt, mut ch) = part1();
 
     let numer_0 = p.clone() - Polynomial::new(&[FieldElement::one()]);
     let denom_0 = Polynomial::gen_linear_term(FieldElement::one());
@@ -69,8 +75,33 @@ pub fn part2() {
     let final_2 = p.clone() * p.clone();
 
     let numer_2 = final_0 - final_1 - final_2;
+    let mut coef = vec![FieldElement::zero(); 1025];
+    coef[0] = FieldElement::new(1);
+    coef[1024] = FieldElement::from(-1_i128);
+    let numerator_of_denom_2 = Polynomial::new(&coef);
 
-    //
+    let factor_0 = Polynomial::gen_linear_term(points[1021]);
+    let factor_1 = Polynomial::gen_linear_term(points[1022]);
+    let factor_2 = Polynomial::gen_linear_term(points[1023]);
 
-    todo!()
+    let denom_of_denom_2 = factor_0 * factor_1 * factor_2;
+
+    let (denom_2, r_denom_2) = numerator_of_denom_2.qdiv(denom_of_denom_2);
+
+    let (q_2, r_2) = numer_2.qdiv(denom_2);
+
+    let cp_0 = q_0.scalar_mul(ch.receive_random_field_field_element().val());
+    let cp_1 = q_1.scalar_mul(ch.receive_random_field_field_element().val());
+    let cp_2 = q_2.scalar_mul(ch.receive_random_field_field_element().val());
+
+    let cp = cp_0 + cp_1 + cp_2;
+
+    let cp_ev: Vec<FieldElement> = domain.iter().map(|d| cp.eval(d.clone())).collect();
+
+    let mut cp_mt = MerkleTree::new(cp_ev.clone());
+    cp_mt.build_tree();
+
+    ch.send(cp_mt.root.clone());
+
+    (cp, cp_ev, cp_mt, ch, domain)
 }
