@@ -1,8 +1,12 @@
-use crate::field::FieldElement;
+use crate::{
+    field::FieldElement,
+    list_utils::{remove_trailing_elements, scalar_operation, two_lists_tuple_operation},
+};
 use itertools::{enumerate, EitherOrBoth, Itertools};
 
-pub fn x() -> Polynomial {
-    Polynomial::X()
+/// Removes zeros from the end of a list.
+fn trim_trailing_zeros(p: &[FieldElement]) -> Vec<FieldElement> {
+    remove_trailing_elements(p, &FieldElement::zero())
 }
 
 /// Represents a polynomial over FieldElement.
@@ -18,7 +22,7 @@ impl Polynomial {
     }
 
     /// Returns the polynomial x.
-    pub fn X() -> Self {
+    pub fn x() -> Self {
         Polynomial(vec![FieldElement::zero(), FieldElement::one()])
     }
 
@@ -42,57 +46,7 @@ impl Polynomial {
     /// number of trailing zeros (if they exist) minus 1.
     /// This implies that the degree of the zero polynomial will be -1.
     pub fn degree(&self) -> usize {
-        Self::trim_trailing_zeros(&self.0).len() - 1
-    }
-
-    fn scalar_operation<F>(
-        elements: &[FieldElement],
-        operation: F,
-        scalar: impl Into<FieldElement>,
-    ) -> Vec<FieldElement>
-    where
-        F: Fn(FieldElement, FieldElement) -> FieldElement,
-    {
-        let value: FieldElement = scalar.into();
-        elements.into_iter().map(|e| operation(*e, value)).collect()
-    }
-
-    /// Removes zeros from the end of a list.
-    fn trim_trailing_zeros(p: &[FieldElement]) -> Vec<FieldElement> {
-        Self::remove_trailing_elements(p, &FieldElement::zero())
-    }
-
-    fn two_list_tuple_operation<F>(
-        l1: &[FieldElement],
-        l2: &[FieldElement],
-        operation: F,
-        fill_value: FieldElement,
-    ) -> Vec<FieldElement>
-    where
-        F: Fn(FieldElement, FieldElement) -> FieldElement,
-    {
-        l1.into_iter()
-            .zip_longest(l2)
-            .map(|x| match x {
-                EitherOrBoth::Both(e1, e2) => operation(*e1, *e2),
-                EitherOrBoth::Left(e) => operation(*e, fill_value),
-                EitherOrBoth::Right(e) => operation(*e, fill_value),
-            })
-            .collect()
-    }
-
-    fn remove_trailing_elements(
-        elements: &[FieldElement],
-        element_to_remove: &FieldElement,
-    ) -> Vec<FieldElement> {
-        let it = elements
-            .into_iter()
-            .rev()
-            .skip_while(|x| *x == element_to_remove)
-            .map(Clone::clone);
-        let mut v = it.collect::<Vec<FieldElement>>();
-        v.reverse();
-        v
+        trim_trailing_zeros(&self.0).len() - 1
     }
 
     /// Returns the coefficient of x^n
@@ -106,7 +60,7 @@ impl Polynomial {
 
     /// Multiplies polynomial by a scalar.
     pub fn scalar_mul(&self, scalar: usize) -> Self {
-        Polynomial(Self::scalar_operation(&self.0, |x, y| x * y, scalar))
+        Polynomial(scalar_operation(&self.0, |x, y| x * y, scalar))
     }
 
     /// Evaluates the polynomial at the given point using Horner evaluation.
@@ -160,38 +114,40 @@ impl Polynomial {
     /// * Assert that g is not the zero polynomial.
     pub fn qdiv(&self, other: impl Into<Polynomial>) -> (Polynomial, Polynomial) {
         let other_poly: Polynomial = other.into();
-        let other_elems = Polynomial::trim_trailing_zeros(&other_poly.0);
+        let other_elems = trim_trailing_zeros(&other_poly.0);
         assert!(!other_elems.is_empty(), "Dividing by zero polynomial.");
-        let self_elems = Polynomial::trim_trailing_zeros(&self.0);
+        let self_elems = trim_trailing_zeros(&self.0);
         if self_elems.is_empty() {
             return (Polynomial(vec![]), Polynomial(vec![]));
         }
 
         let mut rem = self_elems.clone();
-        let mut degree_difference = rem.len() - other_elems.len();
-        let mut quotient = vec![FieldElement::zero()]
-            .repeat(degree_difference + 1)
-            .to_vec();
-        while degree_difference >= 0 {
-            let mut tmp = rem.last().unwrap().to_owned() * other_elems.last().unwrap().inverse();
-            quotient[degree_difference] = quotient[degree_difference] + tmp;
-            let mut last_non_zero = degree_difference - 1;
+        let mut deg_dif = rem.len() as i32 - other_elems.len() as i32;
+        let mut quotient = if deg_dif.is_negative() {
+            vec![FieldElement::zero()]
+        } else {
+            vec![FieldElement::zero()]
+                .repeat(deg_dif as usize + 1)
+                .to_vec()
+        };
+        let q_msc_inv = other_elems.last().unwrap().inverse();
+        while deg_dif >= 0 {
+            let tmp = rem.last().unwrap().to_owned() * q_msc_inv;
+            quotient[deg_dif as usize] = quotient[deg_dif as usize] + tmp;
+            let mut last_non_zero = deg_dif - 1;
             for (i, coef) in enumerate(other_elems.clone()) {
-                let i = i + degree_difference;
+                let i = i + deg_dif as usize;
                 rem[i] = rem[i] - (tmp * coef);
                 if rem[i] != FieldElement::zero() {
-                    last_non_zero = i
+                    last_non_zero = i as i32;
                 }
             }
             // Eliminate trailing zeroes (i.e. make r end with its last non-zero coefficient).
-            rem = rem.into_iter().take(last_non_zero + 1).collect();
-            degree_difference = rem.len() - other_elems.len();
+            rem = rem.into_iter().take((last_non_zero + 1) as usize).collect();
+            deg_dif = rem.len() as i32 - other_elems.len() as i32;
         }
 
-        (
-            Polynomial(Self::trim_trailing_zeros(&quotient)),
-            Polynomial(rem),
-        )
+        (Polynomial(trim_trailing_zeros(&quotient)), Polynomial(rem))
     }
 }
 
@@ -227,7 +183,7 @@ impl std::ops::Add for Polynomial {
     type Output = Polynomial;
 
     fn add(self, other: Self) -> Self::Output {
-        Polynomial(Self::two_list_tuple_operation(
+        Polynomial(two_lists_tuple_operation(
             &self.0,
             &other.0,
             |x, y| x + y,
@@ -238,8 +194,7 @@ impl std::ops::Add for Polynomial {
 
 impl std::ops::AddAssign for Polynomial {
     fn add_assign(&mut self, rhs: Self) {
-        self.0 =
-            Self::two_list_tuple_operation(&self.0, &rhs.0, |x, y| x + y, FieldElement::zero());
+        self.0 = two_lists_tuple_operation(&self.0, &rhs.0, |x, y| x + y, FieldElement::zero());
     }
 }
 
@@ -265,7 +220,7 @@ impl std::ops::Sub for Polynomial {
     type Output = Polynomial;
 
     fn sub(self, other: Self) -> Self::Output {
-        Polynomial(Self::two_list_tuple_operation(
+        Polynomial(two_lists_tuple_operation(
             &self.0,
             &other.0,
             |x, y| x - y,
@@ -279,7 +234,7 @@ impl std::ops::Sub<usize> for Polynomial {
 
     fn sub(self, other: usize) -> Self::Output {
         let other_poly: Polynomial = other.into();
-        self + other_poly
+        self - other_poly
     }
 }
 
@@ -288,7 +243,7 @@ impl std::ops::Sub<FieldElement> for Polynomial {
 
     fn sub(self, other: FieldElement) -> Self::Output {
         let other_poly: Polynomial = other.into();
-        self + other_poly
+        self - other_poly
     }
 }
 
@@ -347,7 +302,10 @@ impl std::ops::Div for Polynomial {
 
     fn div(self, other: Self) -> Self::Output {
         let (div, rem) = self.qdiv(other);
-        assert!(rem == 0, "Polynomials are not divisible.");
+        assert!(
+            rem == Polynomial::new(&[]),
+            "Polynomials are not divisible."
+        );
         div
     }
 }
@@ -465,9 +423,13 @@ pub fn prod_field(values: &[FieldElement]) -> FieldElement {
 
 #[cfg(test)]
 mod tests {
-    use super::{x, Polynomial};
+    use super::Polynomial;
     use crate::field::FieldElement;
     use itertools::Itertools;
+
+    fn x() -> Polynomial {
+        Polynomial::x()
+    }
 
     /// Returns a random polynomial of a prescribed degree which is not the zero polynomial.
     fn generate_random_polynomail(degree: usize) -> Polynomial {
@@ -490,6 +452,7 @@ mod tests {
     #[test]
     fn test_div() {
         let p = x().pow(2) - 1;
+        println!("p: {:?}", p);
         assert_eq!(p / (x() - 1), x() + 1)
     }
 
@@ -497,5 +460,14 @@ mod tests {
     fn test_modulo() {
         let p: Polynomial = x().pow(9) - x() * 5usize + 4;
         assert_eq!(p.modulo(x().pow(2) + 1), x() * (-4i128) + 4)
+    }
+
+    #[test]
+    fn test_qdiv() {
+        let p: Polynomial = x().pow(2) - x() * 2usize + 1;
+        let g: Polynomial = x() - 1;
+        let (q, r) = p.qdiv(g.clone());
+        assert!(g == q);
+        assert!(r == Polynomial(vec![]));
     }
 }

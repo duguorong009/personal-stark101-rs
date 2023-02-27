@@ -81,11 +81,34 @@ pub fn verify_decommitment(
 
     let node_id = leaf_id + leaf_num;
 
-    let cur = sha256::digest(leaf_data.to_string());
+    let mut cur = sha256::digest(leaf_data.to_string());
 
     let mut h: String = "".to_string();
 
-    // TODO
+    let bits = format!("{:b}", node_id)
+        .chars()
+        .rev()
+        .take(3)
+        .collect::<String>();
+
+    for (bit, auth) in bits.chars().zip(decommitment.iter().rev()) {
+        if bit.to_string() == "0".to_string() {
+            h = format!("{}{}", cur, auth);
+        } else {
+            h = format!("{}{}", auth, cur);
+        }
+        cur = sha256::digest(h);
+    }
 
     true
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // #[test]
+    // fn test_verify_decommitment() {
+    //     todo!()
+    // }
 }
