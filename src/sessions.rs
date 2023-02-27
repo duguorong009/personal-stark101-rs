@@ -105,3 +105,24 @@ pub fn part2() -> (
 
     (cp, cp_ev, cp_mt, ch, domain)
 }
+
+// From part 3
+pub fn next_fri_domain(domain: &[FieldElement]) -> Vec<FieldElement> {
+    todo!()
+}
+
+pub fn next_fri_polynomial(poly: &Polynomial, alpha: usize) -> Polynomial {
+    todo!()
+}
+
+pub fn next_fri_layer(
+    poly: &Polynomial,
+    dom: &[FieldElement],
+    alpha: usize,
+) -> (Polynomial, Vec<FieldElement>, Vec<FieldElement>) {
+    todo!()
+}
+
+pub fn part3() {
+    todo!()
+}
