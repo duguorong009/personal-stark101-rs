@@ -139,11 +139,50 @@ pub fn next_fri_layer(
 ) -> (Polynomial, Vec<FieldElement>, Vec<FieldElement>) {
     let next_poly = next_fri_polynomial(poly, alpha);
     let next_dom = next_fri_domain(dom);
-    let next_layer = next_dom.iter().map(|x| next_poly.eval(x)).collect();
+    let next_layer = next_dom.iter().map(|x| next_poly.eval(x.clone())).collect();
 
     (next_poly, next_dom, next_layer)
 }
 
-pub fn part3() {
-    todo!()
+pub fn part3() -> (
+    Vec<Polynomial>,
+    Vec<Vec<FieldElement>>,
+    Vec<Vec<FieldElement>>,
+    Vec<MerkleTree>,
+    Channel,
+) {
+    let (cp, cp_ev, cp_mt, mut ch, domain) = part2();
+
+    // FriCommit function
+    let mut fri_polys = vec![cp];
+    let mut fri_doms = vec![domain];
+    let mut fri_layers = vec![cp_ev];
+    let mut merkles = vec![cp_mt];
+
+    while fri_polys.last().unwrap().degree() > 0 {
+        let alpha = ch.receive_random_field_field_element();
+        let (next_poly, next_dom, next_layer) = next_fri_layer(
+            fri_polys.last().unwrap(),
+            fri_doms.last().unwrap(),
+            alpha.val(),
+        );
+        fri_polys.push(next_poly);
+        fri_doms.push(next_dom);
+        fri_layers.push(next_layer.clone());
+
+        let mut merkle = MerkleTree::new(next_layer);
+        merkle.build_tree();
+        merkles.push(merkle);
+
+        ch.send(merkles.last().unwrap().root.clone());
+    }
+    ch.send(
+        fri_polys
+            .last()
+            .unwrap()
+            .get_nth_degree_coefficient(0)
+            .to_string(),
+    );
+
+    (fri_polys, fri_doms, fri_layers, merkles, ch)
 }
