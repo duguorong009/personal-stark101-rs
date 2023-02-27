@@ -12,7 +12,7 @@ pub fn deserialize(obj: Vec<String>) -> String {
 // It allows writing string-form data to it, and reading either random integers of random
 // FieldElements from it.
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub(crate) struct Channel {
+pub struct Channel {
     pub state: String,
     pub proof: Vec<String>,
 }
