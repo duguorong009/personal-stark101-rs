@@ -47,3 +47,30 @@ pub fn part1() -> (
 
     (t, g, points, h_gen, h, domain, p, ev, mt, ch)
 }
+
+pub fn part2() {
+    let (t, g, points, h_gen, h, domain, p, ev, mt, ch) = part1();
+
+    let numer_0 = p.clone() - Polynomial::new(&[FieldElement::one()]);
+    let denom_0 = Polynomial::gen_linear_term(FieldElement::one());
+    let (q_0, r_0) = numer_0.qdiv(denom_0);
+
+    let numer_1 = p.clone() - Polynomial::new(&[FieldElement::new(2338775057)]);
+    let denom_1 = Polynomial::gen_linear_term(points[1022]);
+    let (q_1, r_1) = numer_1.qdiv(denom_1);
+
+    let inner_poly_0 = Polynomial::new(&[FieldElement::zero(), points[2]]);
+    let final_0 = p.compose(inner_poly_0);
+
+    let inner_poly_1 = Polynomial::new(&[FieldElement::zero(), points[1]]);
+    let composition = p.compose(inner_poly_1);
+
+    let final_1 = composition.clone() * composition;
+    let final_2 = p.clone() * p.clone();
+
+    let numer_2 = final_0 - final_1 - final_2;
+
+    //
+
+    todo!()
+}

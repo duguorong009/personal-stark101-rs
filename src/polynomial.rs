@@ -140,10 +140,25 @@ impl Polynomial {
         res
     }
 
+    /// Composes this polynomial with `other`.
+    /// Example:
+    /// >>> f = X**2 + X
+    /// >>> g = X + 1
+    /// >>> f.compose(g) == (2 + 3*X + X**2)
+    /// True
+    pub fn compose(&self, other: Polynomial) -> Polynomial {
+        let mut res = Polynomial::new(&[]);
+
+        for coef in self.0.iter().rev() {
+            res = (res * other.clone()) + Polynomial::new(&[coef.clone()]);
+        }
+        res
+    }
+
     /// Returns q, r the quotient and remainder polynomials respectively, such that
     /// f = q * g + r, where deg(r) < deg(g).
     /// * Assert that g is not the zero polynomial.
-    fn qdiv(&self, other: impl Into<Polynomial>) -> (Polynomial, Polynomial) {
+    pub fn qdiv(&self, other: impl Into<Polynomial>) -> (Polynomial, Polynomial) {
         let other_poly: Polynomial = other.into();
         let other_elems = Polynomial::trim_trailing_zeros(&other_poly.0);
         assert!(!other_elems.is_empty(), "Dividing by zero polynomial.");
