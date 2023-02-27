@@ -45,20 +45,6 @@ impl Polynomial {
         Self::trim_trailing_zeros(&self.0).len() - 1
     }
 
-    fn remove_trailing_elements(
-        elements: &[FieldElement],
-        element_to_remove: &FieldElement,
-    ) -> Vec<FieldElement> {
-        let it = elements
-            .into_iter()
-            .rev()
-            .skip_while(|x| *x == element_to_remove)
-            .map(Clone::clone);
-        let mut v = it.collect::<Vec<FieldElement>>();
-        v.reverse();
-        v
-    }
-
     fn scalar_operation<F>(
         elements: &[FieldElement],
         operation: F,
@@ -95,6 +81,20 @@ impl Polynomial {
             .collect()
     }
 
+    fn remove_trailing_elements(
+        elements: &[FieldElement],
+        element_to_remove: &FieldElement,
+    ) -> Vec<FieldElement> {
+        let it = elements
+            .into_iter()
+            .rev()
+            .skip_while(|x| *x == element_to_remove)
+            .map(Clone::clone);
+        let mut v = it.collect::<Vec<FieldElement>>();
+        v.reverse();
+        v
+    }
+
     /// Returns the coefficient of x^n
     pub fn get_nth_degree_coefficient(&self, n: usize) -> FieldElement {
         if n > self.degree() {
@@ -110,8 +110,16 @@ impl Polynomial {
     }
 
     /// Evaluates the polynomial at the given point using Horner evaluation.
-    pub fn eval(&self, point: FieldElement) -> Self {
-        todo!()
+    pub fn eval(&self, point: FieldElement) -> FieldElement {
+        let point: usize = point.val();
+
+        let mut res = 0;
+
+        for coef in self.0.iter().rev() {
+            res = (res * point + coef.val()) % FieldElement::k_modulus();
+        }
+
+        FieldElement::new(res)
     }
 
     /// Calculates self^other using repeated squaring.
@@ -130,17 +138,6 @@ impl Polynomial {
             current = current.to_owned() * current;
         }
         res
-    }
-
-    pub fn calculate_lagrange_polynomials(x_values: &[FieldElement]) -> Vec<Self> {
-        todo!()
-    }
-
-    pub fn interpolate_poly_lagrange(
-        y_values: &[FieldElement],
-        lagrange_polynomials: Vec<Self>,
-    ) -> Self {
-        todo!()
     }
 
     /// Returns q, r the quotient and remainder polynomials respectively, such that
@@ -221,6 +218,13 @@ impl std::ops::Add for Polynomial {
             |x, y| x + y,
             FieldElement::zero(),
         ))
+    }
+}
+
+impl std::ops::AddAssign for Polynomial {
+    fn add_assign(&mut self, rhs: Self) {
+        self.0 =
+            Self::two_list_tuple_operation(&self.0, &rhs.0, |x, y| x + y, FieldElement::zero());
     }
 }
 
@@ -349,6 +353,99 @@ impl std::ops::Div<FieldElement> for Polynomial {
         let other_poly: Polynomial = other.into();
         self / other_poly
     }
+}
+
+/// Given the x_values for evaluating some polynomials, it computes part of the lagrange polynomials
+/// required to interpolate a polynomial over this domain.
+pub fn calculate_lagrange_polynomials(x_values: &[FieldElement]) -> Vec<Polynomial> {
+    let mut lagrange_polynomials: Vec<Polynomial> = vec![];
+    let monomials: Vec<Polynomial> = x_values
+        .iter()
+        .map(|x| Polynomial::monomial(1, FieldElement::one()) - Polynomial::monomial(0, x.clone()))
+        .collect();
+    let numerator = prod(&monomials);
+    for j in 0..x_values.len() {
+        // In the denominator, we have:
+        // (x_j-x_0)(x_j-x_1)...(x_j-x_{j-1})(x_j-x_{j+1})...(x_j-x_{len(X)-1})
+        let mut temp: Vec<FieldElement> = vec![];
+        for (i, x) in x_values.iter().enumerate() {
+            if i != j {
+                temp.push(x_values[j] - x.clone());
+            }
+        }
+        let denominator = prod_field(&temp);
+
+        // TODO: How to implement the "prod" so that it can handle both "Polynomial" & "Fieldelement".
+
+        // Numerator is a bit more complicated, since we need to compute a poly multiplication here.
+        // Similarly to the denominator, we have:
+        // (x-x_0)(x-x_1)...(x-x_{j-1})(x-x_{j+1})...(x-x_{len(X)-1})
+        let (cur_poly, _) = numerator.qdiv(monomials[j].scalar_mul(denominator.val()));
+        lagrange_polynomials.push(cur_poly);
+    }
+
+    lagrange_polynomials
+}
+
+///    :param y_values: y coordinates of the points.
+///    :param lagrange_polynomials: the polynomials obtained from calculate_lagrange_polynomials.
+///    :return: the interpolated poly/
+pub fn interpolate_poly_lagrange(
+    y_values: &[FieldElement],
+    lagrange_polynomials: Vec<Polynomial>,
+) -> Polynomial {
+    let mut poly = Polynomial::new(&[]);
+
+    for (j, y_value) in y_values.iter().enumerate() {
+        poly += lagrange_polynomials[j].scalar_mul(y_value.val());
+    }
+
+    poly
+}
+///    Returns a polynomial of degree < len(x_values) that evaluates to y_values[i] on x_values[i] for
+///    all i.
+pub fn interpolate_poly(x_values: Vec<usize>, y_values: Vec<usize>) -> Polynomial {
+    assert!(x_values.len() == y_values.len());
+
+    let x_values: Vec<FieldElement> = x_values.into_iter().map(|x| x.into()).collect();
+
+    let lp = calculate_lagrange_polynomials(&x_values);
+
+    let y_values: Vec<FieldElement> = y_values.into_iter().map(|y| y.into()).collect();
+
+    interpolate_poly_lagrange(&y_values, lp)
+}
+
+/// Computes a product
+pub fn prod(values: &[Polynomial]) -> Polynomial {
+    let values_len = values.len();
+
+    if values_len == 0 {
+        return Polynomial::new(&[]);
+    }
+
+    if values_len == 1 {
+        return values[0].clone();
+    }
+
+    let chunks = values.chunks(values_len / 2).collect_vec();
+    prod(chunks[0]) * prod(chunks[1])
+}
+
+/// Computes a product of [FieldElement]
+pub fn prod_field(values: &[FieldElement]) -> FieldElement {
+    let values_len = values.len();
+
+    if values_len == 0 {
+        return FieldElement::one();
+    }
+
+    if values_len == 1 {
+        return values[0].clone();
+    }
+
+    let chunks = values.chunks(values_len / 2).collect_vec();
+    prod_field(chunks[0]) * prod_field(chunks[1])
 }
 
 #[cfg(test)]

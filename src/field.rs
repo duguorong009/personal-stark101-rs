@@ -79,6 +79,10 @@ impl FieldElement {
 
         candidate
     }
+
+    pub fn val(&self) -> usize {
+        self.0
+    }
 }
 
 impl PartialEq<usize> for FieldElement {
