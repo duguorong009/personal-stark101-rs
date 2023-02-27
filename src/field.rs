@@ -47,7 +47,7 @@ impl FieldElement {
             if n % 2 != 0 {
                 res *= current_pow;
             }
-            n = n / 2;
+            n /= 2;
             current_pow *= current_pow;
         }
         res

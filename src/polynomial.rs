@@ -2,7 +2,7 @@ use crate::{
     field::FieldElement,
     list_utils::{remove_trailing_elements, scalar_operation, two_lists_tuple_operation},
 };
-use itertools::{enumerate, EitherOrBoth, Itertools};
+use itertools::{enumerate, Itertools};
 
 /// Removes zeros from the end of a list.
 fn trim_trailing_zeros(p: &[FieldElement]) -> Vec<FieldElement> {
@@ -104,7 +104,7 @@ impl Polynomial {
         let mut res = Polynomial::new(&[]);
 
         for coef in self.0.iter().rev() {
-            res = (res * other.clone()) + Polynomial::new(&[coef.clone()]);
+            res = (res * other.clone()) + Polynomial::new(&[*coef]);
         }
         res
     }
@@ -113,41 +113,46 @@ impl Polynomial {
     /// f = q * g + r, where deg(r) < deg(g).
     /// * Assert that g is not the zero polynomial.
     pub fn qdiv(&self, other: impl Into<Polynomial>) -> (Polynomial, Polynomial) {
-        let other_poly: Polynomial = other.into();
-        let other_elems = trim_trailing_zeros(&other_poly.0);
-        assert!(!other_elems.is_empty(), "Dividing by zero polynomial.");
-        let self_elems = trim_trailing_zeros(&self.0);
-        if self_elems.is_empty() {
+        let g: Polynomial = other.into();
+        let g_coeffs = trim_trailing_zeros(&g.0);
+        assert!(!g_coeffs.is_empty(), "Dividing by zero polynomial.");
+
+        let p_coeffs = trim_trailing_zeros(&self.0);
+        if p_coeffs.is_empty() {
             return (Polynomial(vec![]), Polynomial(vec![]));
         }
 
-        let mut rem = self_elems.clone();
-        let mut deg_dif = rem.len() as i32 - other_elems.len() as i32;
-        let mut quotient = if deg_dif.is_negative() {
+        let mut r = p_coeffs;
+
+        let mut deg_dif = r.len() as i32 - g_coeffs.len() as i32;
+
+        let mut q = if deg_dif.is_negative() {
             vec![FieldElement::zero()]
         } else {
             vec![FieldElement::zero()]
                 .repeat(deg_dif as usize + 1)
                 .to_vec()
         };
-        let q_msc_inv = other_elems.last().unwrap().inverse();
+
+        let q_msc_inv = g_coeffs.last().unwrap().inverse();
+
         while deg_dif >= 0 {
-            let tmp = rem.last().unwrap().to_owned() * q_msc_inv;
-            quotient[deg_dif as usize] = quotient[deg_dif as usize] + tmp;
+            let tmp = r.last().unwrap().to_owned() * q_msc_inv;
+            q[deg_dif as usize] += tmp;
             let mut last_non_zero = deg_dif - 1;
-            for (i, coef) in enumerate(other_elems.clone()) {
+            for (i, coef) in enumerate(g_coeffs.clone()) {
                 let i = i + deg_dif as usize;
-                rem[i] = rem[i] - (tmp * coef);
-                if rem[i] != FieldElement::zero() {
+                r[i] = r[i] - (tmp * coef);
+                if r[i] != FieldElement::zero() {
                     last_non_zero = i as i32;
                 }
             }
             // Eliminate trailing zeroes (i.e. make r end with its last non-zero coefficient).
-            rem = rem.into_iter().take((last_non_zero + 1) as usize).collect();
-            deg_dif = rem.len() as i32 - other_elems.len() as i32;
+            r = r.into_iter().take((last_non_zero + 1) as usize).collect();
+            deg_dif = r.len() as i32 - g_coeffs.len() as i32;
         }
 
-        (Polynomial(trim_trailing_zeros(&quotient)), Polynomial(rem))
+        (Polynomial(trim_trailing_zeros(&q)), Polynomial(r))
     }
 }
 
@@ -334,7 +339,7 @@ pub fn calculate_lagrange_polynomials(x_values: &[FieldElement]) -> Vec<Polynomi
     let mut lagrange_polynomials: Vec<Polynomial> = vec![];
     let monomials: Vec<Polynomial> = x_values
         .iter()
-        .map(|x| Polynomial::monomial(1, FieldElement::one()) - Polynomial::monomial(0, x.clone()))
+        .map(|x| Polynomial::monomial(1, FieldElement::one()) - Polynomial::monomial(0, *x))
         .collect();
     let numerator = prod(&monomials);
     for j in 0..x_values.len() {
@@ -343,7 +348,7 @@ pub fn calculate_lagrange_polynomials(x_values: &[FieldElement]) -> Vec<Polynomi
         let mut temp: Vec<FieldElement> = vec![];
         for (i, x) in x_values.iter().enumerate() {
             if i != j {
-                temp.push(x_values[j] - x.clone());
+                temp.push(x_values[j] - *x);
             }
         }
         let denominator = prod_field(&temp);
@@ -414,7 +419,7 @@ pub fn prod_field(values: &[FieldElement]) -> FieldElement {
     }
 
     if values_len == 1 {
-        return values[0].clone();
+        return values[0];
     }
 
     let chunks = values.chunks(values_len / 2).collect_vec();
