@@ -168,24 +168,29 @@ impl Polynomial {
         }
 
         let mut rem = self_elems.clone();
-        let mut degree_difference = rem.len() - other_elems.len();
-        let mut quotient = vec![FieldElement::zero()]
-            .repeat(degree_difference + 1)
-            .to_vec();
-        while degree_difference >= 0 {
-            let mut tmp = rem.last().unwrap().to_owned() * other_elems.last().unwrap().inverse();
-            quotient[degree_difference] = quotient[degree_difference] + tmp;
-            let mut last_non_zero = degree_difference - 1;
+        let mut deg_dif = rem.len() as i32 - other_elems.len() as i32;
+        let mut quotient = if deg_dif.is_negative() {
+            vec![FieldElement::zero()]
+        } else {
+            vec![FieldElement::zero()]
+                .repeat(deg_dif as usize + 1)
+                .to_vec()
+        };
+        let q_msc_inv = other_elems.last().unwrap().inverse();
+        while deg_dif >= 0 {
+            let tmp = rem.last().unwrap().to_owned() * q_msc_inv;
+            quotient[deg_dif as usize] = quotient[deg_dif as usize] + tmp;
+            let mut last_non_zero = deg_dif - 1;
             for (i, coef) in enumerate(other_elems.clone()) {
-                let i = i + degree_difference;
+                let i = i + deg_dif as usize;
                 rem[i] = rem[i] - (tmp * coef);
                 if rem[i] != FieldElement::zero() {
-                    last_non_zero = i
+                    last_non_zero = i as i32;
                 }
             }
             // Eliminate trailing zeroes (i.e. make r end with its last non-zero coefficient).
-            rem = rem.into_iter().take(last_non_zero + 1).collect();
-            degree_difference = rem.len() - other_elems.len();
+            rem = rem.into_iter().take((last_non_zero + 1) as usize).collect();
+            deg_dif = rem.len() as i32 - other_elems.len() as i32;
         }
 
         (
@@ -279,7 +284,7 @@ impl std::ops::Sub<usize> for Polynomial {
 
     fn sub(self, other: usize) -> Self::Output {
         let other_poly: Polynomial = other.into();
-        self + other_poly
+        self - other_poly
     }
 }
 
@@ -288,7 +293,7 @@ impl std::ops::Sub<FieldElement> for Polynomial {
 
     fn sub(self, other: FieldElement) -> Self::Output {
         let other_poly: Polynomial = other.into();
-        self + other_poly
+        self - other_poly
     }
 }
 
@@ -497,5 +502,17 @@ mod tests {
     fn test_modulo() {
         let p: Polynomial = x().pow(9) - x() * 5usize + 4;
         assert_eq!(p.modulo(x().pow(2) + 1), x() * (-4i128) + 4)
+    }
+
+    #[test]
+    fn test_qdiv() {
+        let p: Polynomial = x().pow(2) - x() * 2usize + 1;
+        println!("p: {:?}", p);
+        let g: Polynomial = x() - 1;
+        let (q, r) = p.qdiv(g.clone());
+        println!("g: {:?}", g);
+        println!("q: {:?}", q);
+        assert!(g == q);
+        assert!(r == Polynomial(vec![]));
     }
 }
