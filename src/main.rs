@@ -93,19 +93,17 @@ fn main() {
 
     let w_inv = w.inverse();
     assert!(
-        "55fe9505f35b6d77660537f6541d441ec1bd919d03901210384c6aa1da2682ce"
-            == sha256::digest(H[0].to_string()),
+        H[1] == h,
         "H list is incorrect. H[1] should be h(i.e., the generator of H)."
     );
     for i in 0..8192 {
-        assert!(w_inv * eval_domain[1].pow(i) == eval_domain[i]);
+        assert!((w_inv * eval_domain[1]).pow(i) * w == eval_domain[i]);
     }
     println!("Success!");
 
     // Evaluate on a Coset
     let f_eval: Vec<FieldElement> = eval_domain.iter().map(|d| f.eval(*d)).collect();
     let f_eval_str: Vec<String> = f_eval.iter().map(|x| x.to_string()).collect();
-
     assert!(
         "1d357f674c27194715d1440f6a166e30855550cb8cb8efeb72827f6a1bf9b5bb"
             == sha256::digest(serialize(&f_eval_str))

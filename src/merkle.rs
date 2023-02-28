@@ -62,7 +62,7 @@ impl MerkleTree {
             // An internal node
             let left = self.recursive_build_tree(node_id * 2);
             let right = self.recursive_build_tree(node_id * 2 + 1);
-            let data = vec![left.clone(), right.clone()].join("");
+            let data = format!("{}{}", left, right);
             let h = sha256::digest(data);
             self.facts
                 .insert(h.clone(), MerkleTreeNode::Internal((left, right)));

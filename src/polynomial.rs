@@ -346,16 +346,17 @@ pub fn calculate_lagrange_polynomials(x_values: &[FieldElement]) -> Vec<Polynomi
         .map(|x| Polynomial::monomial(1, FieldElement::one()) - Polynomial::monomial(0, *x))
         .collect();
     let numerator = prod(&monomials);
+
     for j in 0..x_values.len() {
         // In the denominator, we have:
         // (x_j-x_0)(x_j-x_1)...(x_j-x_{j-1})(x_j-x_{j+1})...(x_j-x_{len(X)-1})
-        let mut temp: Vec<FieldElement> = vec![];
+        let mut denoms: Vec<FieldElement> = vec![];
         for (i, x) in x_values.iter().enumerate() {
             if i != j {
-                temp.push(x_values[j] - *x);
+                denoms.push(x_values[j] - *x);
             }
         }
-        let denominator = prod_field(&temp);
+        let denominator = prod_field(&denoms);
 
         // TODO: How to implement the "prod" so that it can handle both "Polynomial" & "Fieldelement".
 
@@ -363,6 +364,7 @@ pub fn calculate_lagrange_polynomials(x_values: &[FieldElement]) -> Vec<Polynomi
         // Similarly to the denominator, we have:
         // (x-x_0)(x-x_1)...(x-x_{j-1})(x-x_{j+1})...(x-x_{len(X)-1})
         let (cur_poly, _) = numerator.qdiv(monomials[j].scalar_mul(denominator.val()));
+
         lagrange_polynomials.push(cur_poly);
     }
 
@@ -406,8 +408,7 @@ pub fn prod(values: &[Polynomial]) -> Polynomial {
         return values[0].clone();
     }
 
-    let chunks = values.chunks(values_len / 2).collect_vec();
-    prod(chunks[0]) * prod(chunks[1])
+    prod(&values[0..values.len() / 2]) * prod(&values[values.len() / 2..])
 }
 
 /// Computes a product of [FieldElement]
@@ -422,13 +423,12 @@ pub fn prod_field(values: &[FieldElement]) -> FieldElement {
         return values[0];
     }
 
-    let chunks = values.chunks(values_len / 2).collect_vec();
-    prod_field(chunks[0]) * prod_field(chunks[1])
+    prod_field(&values[0..values.len() / 2]) * prod_field(&values[values.len() / 2..])
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{Polynomial, X};
+    use super::{interpolate_poly, prod, Polynomial, X};
     use crate::field::FieldElement;
     use itertools::Itertools;
 
@@ -453,7 +453,6 @@ mod tests {
     #[test]
     fn test_div() {
         let p = X().pow(2) - 1;
-        println!("p: {:?}", p);
         assert_eq!(p / (X() - 1), X() + 1)
     }
 
@@ -470,5 +469,49 @@ mod tests {
         let (q, r) = p.qdiv(g.clone());
         assert!(g == q);
         assert!(r == Polynomial(vec![]));
+    }
+
+    #[test]
+    fn test_interpolate_poly() {
+        let x_values = vec![
+            FieldElement::new(1),
+            FieldElement::new(3),
+            FieldElement::from(-2_i128),
+        ];
+        let y_values = vec![
+            FieldElement::new(12),
+            FieldElement::new(10),
+            FieldElement::from(-15_i128),
+        ];
+
+        let poly = interpolate_poly(&x_values, &y_values);
+
+        assert!(
+            poly == Polynomial::new(&[
+                FieldElement::from(7_i128),
+                FieldElement::from(7_i128),
+                FieldElement::from(-2_i128)
+            ])
+        );
+    }
+
+    #[test]
+    fn test_prod_polys() {
+        let polys = vec![
+            Polynomial::new(&[FieldElement::new(1), FieldElement::new(1)]),
+            Polynomial::new(&[FieldElement::new(1), FieldElement::new(1)]),
+            Polynomial::new(&[FieldElement::new(1), FieldElement::new(1)]),
+        ];
+
+        let res = prod(&polys);
+
+        assert!(
+            res == Polynomial::new(&[
+                FieldElement::new(1),
+                FieldElement::new(3),
+                FieldElement::new(3),
+                FieldElement::new(1),
+            ])
+        );
     }
 }

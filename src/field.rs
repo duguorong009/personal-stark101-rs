@@ -183,7 +183,7 @@ impl std::ops::Neg for FieldElement {
 
 impl ToString for FieldElement {
     fn to_string(&self) -> String {
-        format!("{:x}", self.0)
+        format!("{}", self.0)
     }
 }
 
