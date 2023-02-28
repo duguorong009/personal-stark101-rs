@@ -2,7 +2,8 @@ use num::{BigInt, Num, ToPrimitive};
 
 use crate::field::FieldElement;
 
-pub fn deserialize(obj: Vec<String>) -> String {
+/// Serializes an object into a string.
+pub fn serialize(obj: Vec<String>) -> String {
     obj.join(",")
 }
 

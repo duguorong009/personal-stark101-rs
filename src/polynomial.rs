@@ -9,6 +9,10 @@ fn trim_trailing_zeros(p: &[FieldElement]) -> Vec<FieldElement> {
     remove_trailing_elements(p, &FieldElement::zero())
 }
 
+pub fn X() -> Polynomial {
+    Polynomial::x()
+}
+
 /// Represents a polynomial over FieldElement.
 #[derive(Debug, PartialEq, Clone)]
 pub struct Polynomial(Vec<FieldElement>);
@@ -428,13 +432,9 @@ pub fn prod_field(values: &[FieldElement]) -> FieldElement {
 
 #[cfg(test)]
 mod tests {
-    use super::Polynomial;
+    use super::{Polynomial, X};
     use crate::field::FieldElement;
     use itertools::Itertools;
-
-    fn x() -> Polynomial {
-        Polynomial::x()
-    }
 
     /// Returns a random polynomial of a prescribed degree which is not the zero polynomial.
     fn generate_random_polynomail(degree: usize) -> Polynomial {
@@ -449,28 +449,28 @@ mod tests {
 
     #[test]
     fn test_poly_mul() {
-        let result = (x() + 1) * (x() + 1);
-        let expected = x().pow(2) + x() * 2usize + 1;
+        let result = (X() + 1) * (X() + 1);
+        let expected = X().pow(2) + X() * 2usize + 1;
         assert_eq!(result, expected)
     }
 
     #[test]
     fn test_div() {
-        let p = x().pow(2) - 1;
+        let p = X().pow(2) - 1;
         println!("p: {:?}", p);
-        assert_eq!(p / (x() - 1), x() + 1)
+        assert_eq!(p / (X() - 1), X() + 1)
     }
 
     #[test]
     fn test_modulo() {
-        let p: Polynomial = x().pow(9) - x() * 5usize + 4;
-        assert_eq!(p.modulo(x().pow(2) + 1), x() * (-4i128) + 4)
+        let p: Polynomial = X().pow(9) - X() * 5usize + 4;
+        assert_eq!(p.modulo(X().pow(2) + 1), X() * (-4i128) + 4)
     }
 
     #[test]
     fn test_qdiv() {
-        let p: Polynomial = x().pow(2) - x() * 2usize + 1;
-        let g: Polynomial = x() - 1;
+        let p: Polynomial = X().pow(2) - X() * 2usize + 1;
+        let g: Polynomial = X() - 1;
         let (q, r) = p.qdiv(g.clone());
         assert!(g == q);
         assert!(r == Polynomial(vec![]));
