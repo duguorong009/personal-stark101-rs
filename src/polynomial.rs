@@ -2,11 +2,15 @@ use crate::{
     field::FieldElement,
     list_utils::{remove_trailing_elements, scalar_operation, two_lists_tuple_operation},
 };
-use itertools::{enumerate, EitherOrBoth, Itertools};
+use itertools::{enumerate, Itertools};
 
 /// Removes zeros from the end of a list.
 fn trim_trailing_zeros(p: &[FieldElement]) -> Vec<FieldElement> {
     remove_trailing_elements(p, &FieldElement::zero())
+}
+
+pub fn X() -> Polynomial {
+    Polynomial::x()
 }
 
 /// Represents a polynomial over FieldElement.
@@ -45,13 +49,13 @@ impl Polynomial {
     /// The polynomials are represented by a list so the degree is the length of the list minus the
     /// number of trailing zeros (if they exist) minus 1.
     /// This implies that the degree of the zero polynomial will be -1.
-    pub fn degree(&self) -> usize {
-        trim_trailing_zeros(&self.0).len() - 1
+    pub fn degree(&self) -> i128 {
+        trim_trailing_zeros(&self.0).len() as i128 - 1
     }
 
     /// Returns the coefficient of x^n
     pub fn get_nth_degree_coefficient(&self, n: usize) -> FieldElement {
-        if n > self.degree() {
+        if n as i128 > self.degree() {
             FieldElement::zero()
         } else {
             self.0[n]
@@ -104,7 +108,7 @@ impl Polynomial {
         let mut res = Polynomial::new(&[]);
 
         for coef in self.0.iter().rev() {
-            res = (res * other.clone()) + Polynomial::new(&[coef.clone()]);
+            res = (res * other.clone()) + Polynomial::new(&[*coef]);
         }
         res
     }
@@ -113,41 +117,46 @@ impl Polynomial {
     /// f = q * g + r, where deg(r) < deg(g).
     /// * Assert that g is not the zero polynomial.
     pub fn qdiv(&self, other: impl Into<Polynomial>) -> (Polynomial, Polynomial) {
-        let other_poly: Polynomial = other.into();
-        let other_elems = trim_trailing_zeros(&other_poly.0);
-        assert!(!other_elems.is_empty(), "Dividing by zero polynomial.");
-        let self_elems = trim_trailing_zeros(&self.0);
-        if self_elems.is_empty() {
+        let g: Polynomial = other.into();
+        let g_coeffs = trim_trailing_zeros(&g.0);
+        assert!(!g_coeffs.is_empty(), "Dividing by zero polynomial.");
+
+        let p_coeffs = trim_trailing_zeros(&self.0);
+        if p_coeffs.is_empty() {
             return (Polynomial(vec![]), Polynomial(vec![]));
         }
 
-        let mut rem = self_elems.clone();
-        let mut deg_dif = rem.len() as i32 - other_elems.len() as i32;
-        let mut quotient = if deg_dif.is_negative() {
+        let mut r = p_coeffs;
+
+        let mut deg_dif = r.len() as i32 - g_coeffs.len() as i32;
+
+        let mut q = if deg_dif.is_negative() {
             vec![FieldElement::zero()]
         } else {
             vec![FieldElement::zero()]
                 .repeat(deg_dif as usize + 1)
                 .to_vec()
         };
-        let q_msc_inv = other_elems.last().unwrap().inverse();
+
+        let q_msc_inv = g_coeffs.last().unwrap().inverse();
+
         while deg_dif >= 0 {
-            let tmp = rem.last().unwrap().to_owned() * q_msc_inv;
-            quotient[deg_dif as usize] = quotient[deg_dif as usize] + tmp;
+            let tmp = r.last().unwrap().to_owned() * q_msc_inv;
+            q[deg_dif as usize] += tmp;
             let mut last_non_zero = deg_dif - 1;
-            for (i, coef) in enumerate(other_elems.clone()) {
+            for (i, coef) in enumerate(g_coeffs.clone()) {
                 let i = i + deg_dif as usize;
-                rem[i] = rem[i] - (tmp * coef);
-                if rem[i] != FieldElement::zero() {
+                r[i] = r[i] - (tmp * coef);
+                if r[i] != FieldElement::zero() {
                     last_non_zero = i as i32;
                 }
             }
             // Eliminate trailing zeroes (i.e. make r end with its last non-zero coefficient).
-            rem = rem.into_iter().take((last_non_zero + 1) as usize).collect();
-            deg_dif = rem.len() as i32 - other_elems.len() as i32;
+            r = r.into_iter().take((last_non_zero + 1) as usize).collect();
+            deg_dif = r.len() as i32 - g_coeffs.len() as i32;
         }
 
-        (Polynomial(trim_trailing_zeros(&quotient)), Polynomial(rem))
+        (Polynomial(trim_trailing_zeros(&q)), Polynomial(r))
     }
 }
 
@@ -259,7 +268,7 @@ impl std::ops::Mul for Polynomial {
     type Output = Polynomial;
 
     fn mul(self, other: Self) -> Self::Output {
-        let mut res = [FieldElement::zero()].repeat(self.degree() + other.degree() + 1);
+        let mut res = [FieldElement::zero()].repeat((self.degree() + other.degree() + 1) as usize);
         for (i, c1) in self.0.into_iter().enumerate() {
             for (j, c2) in other.clone().0.into_iter().enumerate() {
                 res[i + j] += c1 * c2;
@@ -334,19 +343,20 @@ pub fn calculate_lagrange_polynomials(x_values: &[FieldElement]) -> Vec<Polynomi
     let mut lagrange_polynomials: Vec<Polynomial> = vec![];
     let monomials: Vec<Polynomial> = x_values
         .iter()
-        .map(|x| Polynomial::monomial(1, FieldElement::one()) - Polynomial::monomial(0, x.clone()))
+        .map(|x| Polynomial::monomial(1, FieldElement::one()) - Polynomial::monomial(0, *x))
         .collect();
     let numerator = prod(&monomials);
+
     for j in 0..x_values.len() {
         // In the denominator, we have:
         // (x_j-x_0)(x_j-x_1)...(x_j-x_{j-1})(x_j-x_{j+1})...(x_j-x_{len(X)-1})
-        let mut temp: Vec<FieldElement> = vec![];
+        let mut denoms: Vec<FieldElement> = vec![];
         for (i, x) in x_values.iter().enumerate() {
             if i != j {
-                temp.push(x_values[j] - x.clone());
+                denoms.push(x_values[j] - *x);
             }
         }
-        let denominator = prod_field(&temp);
+        let denominator = prod_field(&denoms);
 
         // TODO: How to implement the "prod" so that it can handle both "Polynomial" & "Fieldelement".
 
@@ -354,6 +364,7 @@ pub fn calculate_lagrange_polynomials(x_values: &[FieldElement]) -> Vec<Polynomi
         // Similarly to the denominator, we have:
         // (x-x_0)(x-x_1)...(x-x_{j-1})(x-x_{j+1})...(x-x_{len(X)-1})
         let (cur_poly, _) = numerator.qdiv(monomials[j].scalar_mul(denominator.val()));
+
         lagrange_polynomials.push(cur_poly);
     }
 
@@ -377,16 +388,12 @@ pub fn interpolate_poly_lagrange(
 }
 ///    Returns a polynomial of degree < len(x_values) that evaluates to y_values[i] on x_values[i] for
 ///    all i.
-pub fn interpolate_poly(x_values: Vec<usize>, y_values: Vec<usize>) -> Polynomial {
+pub fn interpolate_poly(x_values: &[FieldElement], y_values: &[FieldElement]) -> Polynomial {
     assert!(x_values.len() == y_values.len());
 
-    let x_values: Vec<FieldElement> = x_values.into_iter().map(|x| x.into()).collect();
+    let lp = calculate_lagrange_polynomials(x_values);
 
-    let lp = calculate_lagrange_polynomials(&x_values);
-
-    let y_values: Vec<FieldElement> = y_values.into_iter().map(|y| y.into()).collect();
-
-    interpolate_poly_lagrange(&y_values, lp)
+    interpolate_poly_lagrange(y_values, lp)
 }
 
 /// Computes a product
@@ -401,8 +408,7 @@ pub fn prod(values: &[Polynomial]) -> Polynomial {
         return values[0].clone();
     }
 
-    let chunks = values.chunks(values_len / 2).collect_vec();
-    prod(chunks[0]) * prod(chunks[1])
+    prod(&values[0..values.len() / 2]) * prod(&values[values.len() / 2..])
 }
 
 /// Computes a product of [FieldElement]
@@ -414,22 +420,17 @@ pub fn prod_field(values: &[FieldElement]) -> FieldElement {
     }
 
     if values_len == 1 {
-        return values[0].clone();
+        return values[0];
     }
 
-    let chunks = values.chunks(values_len / 2).collect_vec();
-    prod_field(chunks[0]) * prod_field(chunks[1])
+    prod_field(&values[0..values.len() / 2]) * prod_field(&values[values.len() / 2..])
 }
 
 #[cfg(test)]
 mod tests {
-    use super::Polynomial;
+    use super::{interpolate_poly, prod, Polynomial, X};
     use crate::field::FieldElement;
     use itertools::Itertools;
-
-    fn x() -> Polynomial {
-        Polynomial::x()
-    }
 
     /// Returns a random polynomial of a prescribed degree which is not the zero polynomial.
     fn generate_random_polynomail(degree: usize) -> Polynomial {
@@ -444,30 +445,73 @@ mod tests {
 
     #[test]
     fn test_poly_mul() {
-        let result = (x() + 1) * (x() + 1);
-        let expected = x().pow(2) + x() * 2usize + 1;
+        let result = (X() + 1) * (X() + 1);
+        let expected = X().pow(2) + X() * 2usize + 1;
         assert_eq!(result, expected)
     }
 
     #[test]
     fn test_div() {
-        let p = x().pow(2) - 1;
-        println!("p: {:?}", p);
-        assert_eq!(p / (x() - 1), x() + 1)
+        let p = X().pow(2) - 1;
+        assert_eq!(p / (X() - 1), X() + 1)
     }
 
     #[test]
     fn test_modulo() {
-        let p: Polynomial = x().pow(9) - x() * 5usize + 4;
-        assert_eq!(p.modulo(x().pow(2) + 1), x() * (-4i128) + 4)
+        let p: Polynomial = X().pow(9) - X() * 5usize + 4;
+        assert_eq!(p.modulo(X().pow(2) + 1), X() * (-4i128) + 4)
     }
 
     #[test]
     fn test_qdiv() {
-        let p: Polynomial = x().pow(2) - x() * 2usize + 1;
-        let g: Polynomial = x() - 1;
+        let p: Polynomial = X().pow(2) - X() * 2usize + 1;
+        let g: Polynomial = X() - 1;
         let (q, r) = p.qdiv(g.clone());
         assert!(g == q);
         assert!(r == Polynomial(vec![]));
+    }
+
+    #[test]
+    fn test_interpolate_poly() {
+        let x_values = vec![
+            FieldElement::new(1),
+            FieldElement::new(3),
+            FieldElement::from(-2_i128),
+        ];
+        let y_values = vec![
+            FieldElement::new(12),
+            FieldElement::new(10),
+            FieldElement::from(-15_i128),
+        ];
+
+        let poly = interpolate_poly(&x_values, &y_values);
+
+        assert!(
+            poly == Polynomial::new(&[
+                FieldElement::from(7_i128),
+                FieldElement::from(7_i128),
+                FieldElement::from(-2_i128)
+            ])
+        );
+    }
+
+    #[test]
+    fn test_prod_polys() {
+        let polys = vec![
+            Polynomial::new(&[FieldElement::new(1), FieldElement::new(1)]),
+            Polynomial::new(&[FieldElement::new(1), FieldElement::new(1)]),
+            Polynomial::new(&[FieldElement::new(1), FieldElement::new(1)]),
+        ];
+
+        let res = prod(&polys);
+
+        assert!(
+            res == Polynomial::new(&[
+                FieldElement::new(1),
+                FieldElement::new(3),
+                FieldElement::new(3),
+                FieldElement::new(1),
+            ])
+        );
     }
 }

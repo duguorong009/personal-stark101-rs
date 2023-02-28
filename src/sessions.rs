@@ -27,17 +27,11 @@ pub fn part1() -> (
     let h_gen = FieldElement::generator().pow((2_usize.pow(30) * 3) / 8192);
     let h: Vec<FieldElement> = (0..8192).map(|i| h_gen.pow(i)).collect();
 
-    let domain: Vec<FieldElement> = h
-        .iter()
-        .map(|x| FieldElement::generator() * x.clone())
-        .collect();
+    let domain: Vec<FieldElement> = h.iter().map(|x| FieldElement::generator() * *x).collect();
 
-    let mut points_usize: Vec<usize> = points.iter().map(|x| x.val()).collect();
-    points_usize.pop();
-    let t_usize = t.iter().map(|x| x.val()).collect();
-    let p = interpolate_poly(points_usize, t_usize);
+    let p = interpolate_poly(&points[0..points.len() - 1], &t);
 
-    let ev: Vec<FieldElement> = domain.iter().map(|d| p.eval(d.clone())).collect();
+    let ev: Vec<FieldElement> = domain.iter().map(|d| p.eval(*d)).collect();
 
     let mut mt = MerkleTree::new(ev.clone());
     mt.build_tree();
@@ -72,7 +66,7 @@ pub fn part2() -> (
     let composition = p.compose(inner_poly_1);
 
     let final_1 = composition.clone() * composition;
-    let final_2 = p.clone() * p.clone();
+    let final_2 = p.clone() * p;
 
     let numer_2 = final_0 - final_1 - final_2;
     let mut coef = vec![FieldElement::zero(); 1025];
@@ -96,7 +90,7 @@ pub fn part2() -> (
 
     let cp = cp_0 + cp_1 + cp_2;
 
-    let cp_ev: Vec<FieldElement> = domain.iter().map(|d| cp.eval(d.clone())).collect();
+    let cp_ev: Vec<FieldElement> = domain.iter().map(|d| cp.eval(*d)).collect();
 
     let mut cp_mt = MerkleTree::new(cp_ev.clone());
     cp_mt.build_tree();
@@ -120,10 +114,10 @@ pub fn next_fri_polynomial(poly: &Polynomial, alpha: usize) -> Polynomial {
     let mut odd_coeffs = vec![];
     let mut even_coeffs = vec![];
     for i in (1..poly.degree()).step_by(2) {
-        odd_coeffs.push(poly.get_nth_degree_coefficient(i));
+        odd_coeffs.push(poly.get_nth_degree_coefficient(i as usize));
     }
     for i in (0..poly.degree()).step_by(2) {
-        even_coeffs.push(poly.get_nth_degree_coefficient(i));
+        even_coeffs.push(poly.get_nth_degree_coefficient(i as usize));
     }
 
     let odd = Polynomial::new(&odd_coeffs).scalar_mul(alpha);
@@ -139,7 +133,7 @@ pub fn next_fri_layer(
 ) -> (Polynomial, Vec<FieldElement>, Vec<FieldElement>) {
     let next_poly = next_fri_polynomial(poly, alpha);
     let next_dom = next_fri_domain(dom);
-    let next_layer = next_dom.iter().map(|x| next_poly.eval(x.clone())).collect();
+    let next_layer = next_dom.iter().map(|x| next_poly.eval(*x)).collect();
 
     (next_poly, next_dom, next_layer)
 }

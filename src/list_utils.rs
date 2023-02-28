@@ -1,6 +1,6 @@
 use crate::field::FieldElement;
 use itertools::{
-    EitherOrBoth::{self, *},
+    EitherOrBoth::{self},
     Itertools,
 };
 use std::iter::Iterator;
@@ -10,7 +10,7 @@ pub fn remove_trailing_elements(
     element_to_remove: &FieldElement,
 ) -> Vec<FieldElement> {
     let filtered_iter = elements
-        .into_iter()
+        .iter()
         .rev()
         .skip_while(|x| *x == element_to_remove)
         .map(Clone::clone);
@@ -28,7 +28,7 @@ pub fn two_lists_tuple_operation<F>(
 where
     F: Fn(FieldElement, FieldElement) -> FieldElement,
 {
-    l1.into_iter()
+    l1.iter()
         .zip_longest(l2)
         .map(|x| match x {
             EitherOrBoth::Both(e1, e2) => operation(*e1, *e2),
@@ -47,7 +47,7 @@ where
     F: Fn(FieldElement, FieldElement) -> FieldElement,
 {
     let value: FieldElement = scalar.into();
-    elements.into_iter().map(|e| operation(*e, value)).collect()
+    elements.iter().map(|e| operation(*e, value)).collect()
 }
 
 #[cfg(test)]

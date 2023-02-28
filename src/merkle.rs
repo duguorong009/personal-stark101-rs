@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::field::FieldElement;
 
-pub enum MerkleTreeNode {
+enum MerkleTreeNode {
     Internal((String, String)),
     Leaf(String),
 }
@@ -23,7 +23,7 @@ pub struct MerkleTree {
 
 impl MerkleTree {
     pub fn new(leaves: Vec<FieldElement>) -> Self {
-        assert!(leaves.len() > 0, "Cannot construct an empty Merkle Tree");
+        assert!(!leaves.is_empty(), "Cannot construct an empty Merkle Tree");
 
         let height = (leaves.len() as f32).log2().ceil() as u32;
         let num_leaves = 2_usize.pow(height);
@@ -49,7 +49,7 @@ impl MerkleTree {
         root
     }
 
-    pub fn recursive_build_tree(&mut self, node_id: usize) -> String {
+    fn recursive_build_tree(&mut self, node_id: usize) -> String {
         if node_id >= self.data.len() {
             // A leaf
             let id_in_data = node_id - self.data.len();
@@ -62,7 +62,7 @@ impl MerkleTree {
             // An internal node
             let left = self.recursive_build_tree(node_id * 2);
             let right = self.recursive_build_tree(node_id * 2 + 1);
-            let data = vec![left.clone(), right.clone()].join("");
+            let data = format!("{}{}", left, right);
             let h = sha256::digest(data);
             self.facts
                 .insert(h.clone(), MerkleTreeNode::Internal((left, right)));
@@ -74,7 +74,7 @@ impl MerkleTree {
 pub fn verify_decommitment(
     leaf_id: usize,
     leaf_data: FieldElement,
-    decommitment: Vec<String>,
+    decommitment: &[String],
     root: String,
 ) -> bool {
     let leaf_num = 2_usize.pow(decommitment.len() as u32);
@@ -83,8 +83,6 @@ pub fn verify_decommitment(
 
     let mut cur = sha256::digest(leaf_data.to_string());
 
-    let mut h: String = "".to_string();
-
     let bits = format!("{:b}", node_id)
         .chars()
         .rev()
@@ -92,15 +90,15 @@ pub fn verify_decommitment(
         .collect::<String>();
 
     for (bit, auth) in bits.chars().zip(decommitment.iter().rev()) {
-        if bit.to_string() == "0".to_string() {
-            h = format!("{}{}", cur, auth);
+        let h = if bit.to_string() == *"0" {
+            format!("{}{}", cur, auth)
         } else {
-            h = format!("{}{}", auth, cur);
-        }
+            format!("{}{}", auth, cur)
+        };
         cur = sha256::digest(h);
     }
 
-    true
+    cur == root
 }
 
 #[cfg(test)]

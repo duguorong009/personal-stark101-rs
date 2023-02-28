@@ -47,7 +47,7 @@ impl FieldElement {
             if n % 2 != 0 {
                 res *= current_pow;
             }
-            n = n / 2;
+            n /= 2;
             current_pow *= current_pow;
         }
         res
@@ -183,7 +183,7 @@ impl std::ops::Neg for FieldElement {
 
 impl ToString for FieldElement {
     fn to_string(&self) -> String {
-        format!("{:x}", self.0)
+        format!("{}", self.0)
     }
 }
 
