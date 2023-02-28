@@ -45,13 +45,13 @@ impl Polynomial {
     /// The polynomials are represented by a list so the degree is the length of the list minus the
     /// number of trailing zeros (if they exist) minus 1.
     /// This implies that the degree of the zero polynomial will be -1.
-    pub fn degree(&self) -> usize {
-        trim_trailing_zeros(&self.0).len() - 1
+    pub fn degree(&self) -> i128 {
+        trim_trailing_zeros(&self.0).len() as i128 - 1
     }
 
     /// Returns the coefficient of x^n
     pub fn get_nth_degree_coefficient(&self, n: usize) -> FieldElement {
-        if n > self.degree() {
+        if n as i128 > self.degree() {
             FieldElement::zero()
         } else {
             self.0[n]
@@ -264,7 +264,7 @@ impl std::ops::Mul for Polynomial {
     type Output = Polynomial;
 
     fn mul(self, other: Self) -> Self::Output {
-        let mut res = [FieldElement::zero()].repeat(self.degree() + other.degree() + 1);
+        let mut res = [FieldElement::zero()].repeat((self.degree() + other.degree() + 1) as usize);
         for (i, c1) in self.0.into_iter().enumerate() {
             for (j, c2) in other.clone().0.into_iter().enumerate() {
                 res[i + j] += c1 * c2;

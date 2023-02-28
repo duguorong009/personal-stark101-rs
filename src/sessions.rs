@@ -117,10 +117,10 @@ pub fn next_fri_polynomial(poly: &Polynomial, alpha: usize) -> Polynomial {
     let mut odd_coeffs = vec![];
     let mut even_coeffs = vec![];
     for i in (1..poly.degree()).step_by(2) {
-        odd_coeffs.push(poly.get_nth_degree_coefficient(i));
+        odd_coeffs.push(poly.get_nth_degree_coefficient(i as usize));
     }
     for i in (0..poly.degree()).step_by(2) {
-        even_coeffs.push(poly.get_nth_degree_coefficient(i));
+        even_coeffs.push(poly.get_nth_degree_coefficient(i as usize));
     }
 
     let odd = Polynomial::new(&odd_coeffs).scalar_mul(alpha);

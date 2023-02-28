@@ -11,6 +11,6 @@ mod sessions;
 fn main() {
     println!("Hello, world!");
     // part1();
-    // part2();
+    part2();
     // part3();
 }
