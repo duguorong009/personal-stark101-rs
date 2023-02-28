@@ -77,10 +77,7 @@ fn main() {
     // println!("p: {:?}", p);
 
     // Interpolating a Polynomial
-    let a_usize: Vec<usize> = a.iter().map(|x| x.val()).collect();
-    let mut G_usize: Vec<usize> = G.iter().map(|x| x.val()).collect();
-    G_usize.pop();
-    let f = interpolate_poly(G_usize, a_usize);
+    let f = interpolate_poly(&G[0..G.len() - 1], &a);
     let v = f.eval(FieldElement::new(2));
     assert!(v == FieldElement::new(1302089273));
     println!("Success!");

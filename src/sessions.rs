@@ -29,10 +29,7 @@ pub fn part1() -> (
 
     let domain: Vec<FieldElement> = h.iter().map(|x| FieldElement::generator() * *x).collect();
 
-    let mut points_usize: Vec<usize> = points.iter().map(|x| x.val()).collect();
-    points_usize.pop();
-    let t_usize = t.iter().map(|x| x.val()).collect();
-    let p = interpolate_poly(points_usize, t_usize);
+    let p = interpolate_poly(&points[0..points.len() - 1], &t);
 
     let ev: Vec<FieldElement> = domain.iter().map(|d| p.eval(*d)).collect();
 

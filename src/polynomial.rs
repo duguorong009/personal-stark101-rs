@@ -386,16 +386,12 @@ pub fn interpolate_poly_lagrange(
 }
 ///    Returns a polynomial of degree < len(x_values) that evaluates to y_values[i] on x_values[i] for
 ///    all i.
-pub fn interpolate_poly(x_values: Vec<usize>, y_values: Vec<usize>) -> Polynomial {
+pub fn interpolate_poly(x_values: &[FieldElement], y_values: &[FieldElement]) -> Polynomial {
     assert!(x_values.len() == y_values.len());
 
-    let x_values: Vec<FieldElement> = x_values.into_iter().map(|x| x.into()).collect();
+    let lp = calculate_lagrange_polynomials(x_values);
 
-    let lp = calculate_lagrange_polynomials(&x_values);
-
-    let y_values: Vec<FieldElement> = y_values.into_iter().map(|y| y.into()).collect();
-
-    interpolate_poly_lagrange(&y_values, lp)
+    interpolate_poly_lagrange(y_values, lp)
 }
 
 /// Computes a product
