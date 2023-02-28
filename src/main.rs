@@ -104,11 +104,11 @@ fn main() {
 
     // Evaluate on a Coset
     let f_eval: Vec<FieldElement> = eval_domain.iter().map(|d| f.eval(*d)).collect();
-    let f_eval_str = f_eval.iter().map(|x| x.to_string()).collect();
+    let f_eval_str: Vec<String> = f_eval.iter().map(|x| x.to_string()).collect();
 
     assert!(
         "1d357f674c27194715d1440f6a166e30855550cb8cb8efeb72827f6a1bf9b5bb"
-            == sha256::digest(serialize(f_eval_str))
+            == sha256::digest(serialize(&f_eval_str))
     );
     println!("Success!");
 

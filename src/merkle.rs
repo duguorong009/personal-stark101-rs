@@ -74,7 +74,7 @@ impl MerkleTree {
 pub fn verify_decommitment(
     leaf_id: usize,
     leaf_data: FieldElement,
-    decommitment: Vec<String>,
+    decommitment: &[String],
     root: String,
 ) -> bool {
     let leaf_num = 2_usize.pow(decommitment.len() as u32);

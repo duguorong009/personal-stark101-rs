@@ -3,7 +3,7 @@ use num::{BigInt, Num, ToPrimitive};
 use crate::field::FieldElement;
 
 /// Serializes an object into a string.
-pub fn serialize(obj: Vec<String>) -> String {
+pub fn serialize(obj: &[String]) -> String {
     obj.join(",")
 }
 
