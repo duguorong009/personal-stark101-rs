@@ -25,7 +25,7 @@ pub fn part_2() {
     println!("Success!");
 
     // The second constraint
-    let numer_1 = f - 2338775057;
+    let numer_1 = f.clone() - 2338775057;
     let denom_1 = X() - g.pow(1022);
     let p_1 = numer_1 / denom_1;
 
@@ -40,8 +40,7 @@ pub fn part_2() {
     // Composing Polynomials(a detour)
     let q = X().pow(2) * 2_usize + 1;
     let r = X() - 3;
-    // let q_r = q * r;
-    let q_r = Polynomial::new(&[]); // should be q(r)
+    let q_r = q.compose(r); // q.compose(r) == q(r)
     assert!(
         q_r == Polynomial::new(&[
             FieldElement::from(19_i128),
@@ -52,7 +51,7 @@ pub fn part_2() {
     println!("Success!");
 
     // Back to Polynomial constraints
-    let numer_2 = Polynomial::new(&[]); // Should be numer2 = f(g**2 * X) - f(g * X)**2 - f**2
+    let numer_2 = f.compose(X() * g.pow(2)) - f.compose(X() * g).pow(2) - f.pow(2); // Should be numer2 = f(g**2 * X) - f(g * X)**2 - f**2
     let denom_2 =
         (X().pow(1024) - 1) / ((X() - g.pow(1021)) * (X() - g.pow(1022)) * (X() - g.pow(1023)));
     let p_2 = numer_2 / denom_2;
@@ -71,7 +70,8 @@ pub fn part_2() {
         let a_1 = channel.receive_random_field_element();
         let a_2 = channel.receive_random_field_element();
 
-        p_0.clone() * a_0 + p_1.clone() * a_1 + p_2.clone() * a_2
+        // Polynomial::from(a_0) * p_0.clone()
+        Polynomial::from(a_1) * p_1.clone() + Polynomial::from(a_2) * p_2.clone()
     };
 
     let mut test_channel = Channel::new();
