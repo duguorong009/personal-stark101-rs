@@ -84,9 +84,9 @@ pub fn part2() -> (
 
     let (q_2, r_2) = numer_2.qdiv(denom_2);
 
-    let cp_0 = q_0.scalar_mul(ch.receive_random_field_field_element().val());
-    let cp_1 = q_1.scalar_mul(ch.receive_random_field_field_element().val());
-    let cp_2 = q_2.scalar_mul(ch.receive_random_field_field_element().val());
+    let cp_0 = q_0.scalar_mul(ch.receive_random_field_element().val());
+    let cp_1 = q_1.scalar_mul(ch.receive_random_field_element().val());
+    let cp_2 = q_2.scalar_mul(ch.receive_random_field_element().val());
 
     let cp = cp_0 + cp_1 + cp_2;
 
@@ -154,7 +154,7 @@ pub fn part3() -> (
     let mut merkles = vec![cp_mt];
 
     while fri_polys.last().unwrap().degree() > 0 {
-        let alpha = ch.receive_random_field_field_element();
+        let alpha = ch.receive_random_field_element();
         let (next_poly, next_dom, next_layer) = next_fri_layer(
             fri_polys.last().unwrap(),
             fri_doms.last().unwrap(),

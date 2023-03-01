@@ -2,7 +2,7 @@ use crate::{
     field::FieldElement,
     list_utils::{remove_trailing_elements, scalar_operation, two_lists_tuple_operation},
 };
-use itertools::{enumerate, Itertools};
+use itertools::enumerate;
 
 /// Removes zeros from the end of a list.
 fn trim_trailing_zeros(p: &[FieldElement]) -> Vec<FieldElement> {

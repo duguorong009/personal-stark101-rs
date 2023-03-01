@@ -58,7 +58,7 @@ impl Channel {
     }
 
     ///  Emulates a random field element sent by the verifier.
-    pub fn receive_random_field_field_element(&mut self) -> FieldElement {
+    pub fn receive_random_field_element(&mut self) -> FieldElement {
         let num = self.receive_random_int(0, FieldElement::k_modulus() - 1, false);
         self.proof
             .push(format!("receive_random_field_element:{}", num));
