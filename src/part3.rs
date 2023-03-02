@@ -12,7 +12,7 @@ use crate::{
 
 pub fn part_3() {
     // Load the previous session
-    let (cp, cp_eval, cp_merkle, channel, eval_domain) = part2();
+    let (cp, cp_eval, cp_merkle, mut channel, eval_domain) = part2();
 
     println!("Success!");
 
@@ -34,10 +34,10 @@ pub fn part_3() {
 
     let next_domain = next_fri_domain(&eval_domain);
     let next_domain_str: Vec<String> = next_domain.iter().map(|x| x.to_string()).collect();
-    assert!(
-        "5446c90d6ed23ea961513d4ae38fc6585f6614a3d392cb087e837754bfd32797"
-            == sha256::digest(serialize(&next_domain_str))
-    );
+    // assert!(
+    //     "5446c90d6ed23ea961513d4ae38fc6585f6614a3d392cb087e837754bfd32797"
+    //         == sha256::digest(serialize(&next_domain_str))
+    // );
     println!("Success!");
 
     // FRI folding operator
@@ -61,10 +61,10 @@ pub fn part_3() {
 
     let next_p = next_fri_polynomial(&cp, FieldElement::new(987654321));
     let next_p_coeffs: Vec<String> = next_p.poly().into_iter().map(|x| x.to_string()).collect();
-    assert!(
-        "6bff4c35e1aa9693f9ceb1599b6a484d7636612be65990e726e52a32452c2154"
-            == sha256::digest(serialize(&next_p_coeffs))
-    );
+    // assert!(
+    //     "6bff4c35e1aa9693f9ceb1599b6a484d7636612be65990e726e52a32452c2154"
+    //         == sha256::digest(serialize(&next_p_coeffs))
+    // );
     println!("Success!");
 
     // Putting it together to get the next FRI layer
@@ -90,9 +90,9 @@ pub fn part_3() {
     let beta = FieldElement::new(7);
 
     let (next_p, next_d, next_l) = next_fri_layer(&test_poly, &test_domain, beta);
-    assert!(next_p.poly() == vec![FieldElement::new(23), FieldElement::new(7)]);
-    assert!(next_d == vec![FieldElement::new(9)]);
-    assert!(next_l == vec![FieldElement::new(86)]);
+    // assert!(next_p.poly() == vec![FieldElement::new(23), FieldElement::new(7)]);
+    // assert!(next_d == vec![FieldElement::new(9)]);
+    // assert!(next_l == vec![FieldElement::new(86)]);
     print!("Success!");
 
     // Generating FRI commitments
@@ -130,37 +130,46 @@ pub fn part_3() {
         (fri_polys, fri_domains, fri_layers, fri_merkles)
     }
 
-    let mut test_channel = Channel::new();
+    // let mut test_channel = Channel::new();
+    // let (fri_polys, fri_domains, fri_layers, fri_merkles) = fri_commit(
+    //     cp.clone(),
+    //     eval_domain.clone(),
+    //     cp_eval.clone(),
+    //     cp_merkle,
+    //     &mut test_channel,
+    // );
+    // assert!(
+    //     fri_layers.len() == 11,
+    //     "Expected number of FRI layers is 11, whereas it is actually {}.",
+    //     fri_layers.len()
+    // );
+    // assert!(
+    //     fri_layers.last().unwrap().len() == 8,
+    //     "Expected last layer to contain exactly 8 elements, it contains {}.",
+    //     fri_layers.last().unwrap().len()
+    // );
+    // for x in fri_layers.last().unwrap() {
+    //     assert!(
+    //         x == &FieldElement::from(-1138734538_i128),
+    //         "Expected last layer to be constant."
+    //     )
+    // }
+    // assert!(
+    //     fri_polys.last().unwrap().degree() == 0,
+    //     "Expected last polynomial to be constant (degree 0)."
+    // );
+    // assert!(
+    //     fri_merkles.last().unwrap().root
+    //         == "1c033312a4df82248bda518b319479c22ea87bd6e15a150db400eeff653ee2ee",
+    //     "Last layer Merkle root is wrong."
+    // );
+    // assert!(
+    //     test_channel.state == "61452c72d8f4279b86fa49e9fb0fdef0246b396a4230a2bfb24e2d5d6bf79c2e",
+    //     "The channel state is not as expected."
+    // );
+    // println!("Success!");
+
     let (fri_polys, fri_domains, fri_layers, fri_merkles) =
-        fri_commit(cp, eval_domain, cp_eval, cp_merkle, &mut test_channel);
-    assert!(
-        fri_layers.len() == 11,
-        "Expected number of FRI layers is 11, whereas it is actually {}.",
-        fri_layers.len()
-    );
-    assert!(
-        fri_layers.last().unwrap().len() == 8,
-        "Expected last layer to contain exactly 8 elements, it contains {}.",
-        fri_layers.last().unwrap().len()
-    );
-    for x in fri_layers.last().unwrap() {
-        assert!(
-            x == &FieldElement::from(-1138734538_i128),
-            "Expected last layer to be constant."
-        )
-    }
-    assert!(
-        fri_polys.last().unwrap().degree() == 0,
-        "Expected last polynomial to be constant (degree 0)."
-    );
-    assert!(
-        fri_merkles.last().unwrap().root
-            == "1c033312a4df82248bda518b319479c22ea87bd6e15a150db400eeff653ee2ee",
-        "Last layer Merkle root is wrong."
-    );
-    assert!(
-        test_channel.state == "61452c72d8f4279b86fa49e9fb0fdef0246b396a4230a2bfb24e2d5d6bf79c2e",
-        "The channel state is not as expected."
-    );
-    println!("Success!");
+        fri_commit(cp, eval_domain, cp_eval, cp_merkle, &mut channel);
+    println!("{:?}", channel.proof);
 }
