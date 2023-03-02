@@ -111,12 +111,13 @@ pub fn next_fri_domain(domain: &[FieldElement]) -> Vec<FieldElement> {
 }
 
 pub fn next_fri_polynomial(poly: &Polynomial, alpha: usize) -> Polynomial {
+    let poly_len = poly.poly().len();
     let mut odd_coeffs = vec![];
     let mut even_coeffs = vec![];
-    for i in (1..poly.degree()).step_by(2) {
+    for i in (1..poly_len).step_by(2) {
         odd_coeffs.push(poly.get_nth_degree_coefficient(i as usize));
     }
-    for i in (0..poly.degree()).step_by(2) {
+    for i in (0..poly_len).step_by(2) {
         even_coeffs.push(poly.get_nth_degree_coefficient(i as usize));
     }
 
