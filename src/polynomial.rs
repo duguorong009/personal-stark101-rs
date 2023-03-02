@@ -158,6 +158,10 @@ impl Polynomial {
 
         (Polynomial(trim_trailing_zeros(&q)), Polynomial(r))
     }
+
+    pub fn poly(&self) -> Vec<FieldElement> {
+        self.0.clone()
+    }
 }
 
 impl PartialEq<usize> for Polynomial {
