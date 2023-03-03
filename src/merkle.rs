@@ -3,8 +3,8 @@ use std::collections::HashMap;
 use crate::field::FieldElement;
 
 enum MerkleTreeNode {
-    Internal((String, String)),
-    Leaf(String),
+    Internal { left: String, right: String },
+    Leaf { leaf_data: String },
 }
 
 /// Merkle tree implementation
@@ -56,7 +56,7 @@ impl MerkleTree {
             let leaf_data = self.data[id_in_data].to_string();
             let h = sha256::digest(leaf_data.clone());
             self.facts
-                .insert(h.clone(), MerkleTreeNode::Leaf(leaf_data));
+                .insert(h.clone(), MerkleTreeNode::Leaf { leaf_data });
             h
         } else {
             // An internal node
@@ -65,9 +65,42 @@ impl MerkleTree {
             let data = format!("{}{}", left, right);
             let h = sha256::digest(data);
             self.facts
-                .insert(h.clone(), MerkleTreeNode::Internal((left, right)));
+                .insert(h.clone(), MerkleTreeNode::Internal { left, right });
             h
         }
+    }
+
+    pub fn get_authentication_path(&self, leaf_id: usize) -> Vec<String> {
+        assert!(leaf_id < self.data.len());
+
+        let node_id = leaf_id + self.data.len();
+        let mut cur = self.root.clone();
+
+        let mut decommitment: Vec<String> = vec![];
+
+        // In a Merkle Tree, the path from the root to a leaf, corresponds to the the leaf id's
+        // binary representation, starting from the second-MSB, where '0' means 'left', and '1' means
+        // 'right'.
+        // We therefore iterate over the bits of the binary representation - skipping the '0b'
+        // prefix, as well as the MSB.
+        let bits = format!("{:b}", node_id).chars().take(3).collect::<String>();
+
+        for bit in bits.chars() {
+            let mut auth: String = "".to_string();
+
+            let merkle_node = self.facts.get(&cur).unwrap();
+            (cur, auth) = match merkle_node {
+                MerkleTreeNode::Internal { left, right } => (left.to_string(), right.to_string()),
+                MerkleTreeNode::Leaf { leaf_data: _ } => panic!("Cannot be leaf!"),
+            };
+
+            if bit.to_string() == "1" {
+                (auth, cur) = (cur, auth);
+            }
+            decommitment.push(auth);
+        }
+
+        decommitment
     }
 }
 
