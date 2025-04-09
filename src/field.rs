@@ -68,12 +68,12 @@ impl FieldElement {
     }
 
     pub fn random_element(exclude_elements: &[FieldElement]) -> FieldElement {
-        let mut rnd = rand::thread_rng();
-        let random_element: usize = rnd.gen_range(0..FieldElement::k_modulus());
+        let mut rnd = rand::rng();
+        let random_element: usize = rnd.random_range(0..FieldElement::k_modulus());
         let mut candidate = FieldElement::new(random_element);
 
         while exclude_elements.contains(&candidate) {
-            let random_element: usize = rnd.gen_range(0..FieldElement::k_modulus());
+            let random_element: usize = rnd.random_range(0..FieldElement::k_modulus());
             candidate = FieldElement::new(random_element);
         }
 
