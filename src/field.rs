@@ -181,9 +181,9 @@ impl std::ops::Neg for FieldElement {
     }
 }
 
-impl ToString for FieldElement {
-    fn to_string(&self) -> String {
-        format!("{}", self.0)
+impl std::fmt::Display for FieldElement {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
 
