@@ -133,13 +133,3 @@ pub fn verify_decommitment(
 
     cur == root
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    // #[test]
-    // fn test_verify_decommitment() {
-    //     todo!()
-    // }
-}
