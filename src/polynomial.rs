@@ -133,9 +133,7 @@ impl Polynomial {
         let mut q = if deg_dif.is_negative() {
             vec![FieldElement::zero()]
         } else {
-            vec![FieldElement::zero()]
-                .repeat(deg_dif as usize + 1)
-                .to_vec()
+            [FieldElement::zero()].repeat(deg_dif as usize + 1).to_vec()
         };
 
         let q_msc_inv = g_coeffs.last().unwrap().inverse();
